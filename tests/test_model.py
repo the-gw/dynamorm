@@ -1,5 +1,6 @@
 import enum
 import os
+
 import pytest
 
 from dynamorm.exceptions import (
@@ -9,6 +10,8 @@ from dynamorm.exceptions import (
     MissingTableAttribute,
     ValidationError,
 )
+from dynamorm.indexes import GlobalIndex, LocalIndex, ProjectAll, ProjectInclude
+from dynamorm.model import DynaModel
 from dynamorm.indexes import GlobalIndex, GlobalIndex, LocalIndex, LocalIndex, ProjectAll, ProjectAll, ProjectInclude, ProjectInclude
 from dynamorm.model import DynaModel, DynaModel
 
