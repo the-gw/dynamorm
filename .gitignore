@@ -11,3 +11,7 @@ dist/
 *.dist-info/
 
 .coverage
+
+.idea
+.pytest_cache
+build
