@@ -11,7 +11,7 @@ except ImportError:
     __VERSION__ = '0.0.0a0'
 
 setup(
-    name='dynamorm',
+    name='gwio-dynamorm',
     version=__VERSION__,
     description='DynamORM is a Python object & relation mapping library for Amazon\'s DynamoDB service.',
     long_description=long_description,
