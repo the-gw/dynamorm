@@ -3,9 +3,16 @@ from setuptools import setup
 with open('README.rst', 'r') as readme_fd:
     long_description = readme_fd.read()
 
+try:
+    from gwio.devtools.utils import make_calver
+
+    __VERSION__ = make_calver()
+except ImportError:
+    __VERSION__ = '0.0.0a0'
+
 setup(
     name='dynamorm',
-    version='0.9.3',
+    version=__VERSION__,
     description='DynamORM is a Python object & relation mapping library for Amazon\'s DynamoDB service.',
     long_description=long_description,
     author='Evan Borgstrom',
