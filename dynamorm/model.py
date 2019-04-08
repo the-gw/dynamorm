@@ -7,6 +7,7 @@ import logging
 import sys
 
 import six
+from marshmallow.utils import _Missing
 
 from .exceptions import DynaModelException
 from .indexes import Index
@@ -89,6 +90,14 @@ class DynaModelMeta(type):
                 pull_up_fields(attrs['Schema'])
             else:
                 raise DynaModelException("Unknown Schema definitions, we couldn't find any supported fields/types")
+
+            # Solves the "object has no attribute" issue when the attribute hasn't had a value set for it
+            for field_name in dir(attrs['Schema']):
+                if field_name.startswith('__'):
+                    continue
+                field = getattr(attrs['Schema'], field_name)
+                if type(field.missing) == _Missing:
+                    field.missing = None
 
             SchemaClass = type(
                 '{name}Schema'.format(name=name),
