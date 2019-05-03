@@ -7,17 +7,13 @@ import logging
 import sys
 
 import six
+from marshmallow.fields import Field
+from marshmallow.utils import _Missing
 
 from .exceptions import DynaModelException
 from .indexes import Index
 from .relationships import Relationship
-from .signals import (
-    model_prepared,
-    pre_init, post_init,
-    pre_save, post_save,
-    pre_update, post_update,
-    pre_delete, post_delete
-)
+from .signals import (model_prepared, post_delete, post_init, post_save, post_update, pre_delete, pre_init, pre_save, pre_update)
 from .table import DynamoTable3, QueryIterator, ScanIterator
 
 log = logging.getLogger(__name__)
@@ -34,6 +30,7 @@ class DynaModelMeta(type):
     model named ``Foo`` the resulting ``Foo.Schema`` object would be an instance of a class named ``FooSchema``, rather
     than a class named ``Schema``
     """
+
     def __new__(cls, name, parents, attrs):
         if name in ('DynaModel', 'DynaModelMeta'):
             return super(DynaModelMeta, cls).__new__(cls, name, parents, attrs)
@@ -89,6 +86,13 @@ class DynaModelMeta(type):
                 pull_up_fields(attrs['Schema'])
             else:
                 raise DynaModelException("Unknown Schema definitions, we couldn't find any supported fields/types")
+
+            # Solves the "object has no attribute" issue when the attribute hasn't had a value set for it
+            for field in attrs['Schema'].__dict__.values():
+                if not isinstance(field, Field):
+                    continue
+                if isinstance(field.missing, _Missing):
+                    field.missing = None
 
             SchemaClass = type(
                 '{name}Schema'.format(name=name),
@@ -228,12 +232,14 @@ class DynaModel(object):
         marshalling we can accept the untransformed value and pass the transformed value through to the Dyanmo
         operation.
         """
+
         def normalize(key):
             try:
                 validated = cls.Schema.dynamorm_validate({key: kwargs[key]}, partial=True)
                 kwargs[key] = validated[key]
             except KeyError:
                 pass
+
         normalize(cls.Table.hash_key)
         normalize(cls.Table.range_key)
         return kwargs
