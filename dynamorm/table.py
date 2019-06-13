@@ -43,18 +43,16 @@ projection  True      object  An instance of of :class:`dynamorm.model.ProjectAl
 
 import collections
 import logging
-import time
 import warnings
 
 import boto3
 import botocore
 import six
+import time
+from boto3.dynamodb.conditions import Attr, Key
 
-from boto3.dynamodb.conditions import Key, Attr
-from dynamorm.exceptions import (
-    MissingTableAttribute, TableNotActive,
-    InvalidSchemaField, HashKeyExists, ConditionFailed,
-)
+from dynamorm.exceptions import (ConditionFailed, HashKeyExists, InvalidSchemaField, MissingTableAttribute,
+                                 TableNotActive)
 
 log = logging.getLogger(__name__)
 
@@ -83,11 +81,13 @@ class DynamoCommon3(object):
     @property
     def key_schema(self):
         """Return an appropriate KeySchema, based on our key attributes and the schema object"""
+
         def as_schema(name, key_type):
             return {
                 'AttributeName': name,
                 'KeyType': key_type
             }
+
         schema = [as_schema(self.hash_key, 'HASH')]
         if self.range_key:
             schema.append(as_schema(self.range_key, 'RANGE'))
@@ -348,12 +348,18 @@ class DynamoTable3(DynamoCommon3):
             index_args[index.ARG_KEY].append(index.index_args)
 
         log.info("Creating table %s", self.name)
-        table = self.resource.create_table(
+        table_attributes = dict(
             TableName=self.name,
             KeySchema=self.key_schema,
             AttributeDefinitions=self.attribute_definitions,
-            ProvisionedThroughput=self.provisioned_throughput,
             StreamSpecification=self.stream_specification,
+        )
+        if self.read and self.write:
+            table_attributes['ProvisionedThroughput'] = self.provisioned_throughput
+        else:
+            table_attributes['BillingMode'] = 'PAY_PER_REQUEST'
+        table = self.resource.create_table(
+            **table_attributes,
             **index_args
         )
         if wait:
@@ -434,7 +440,6 @@ class DynamoTable3(DynamoCommon3):
         if (self.read and self.write) and \
                 (self.read != table.provisioned_throughput['ReadCapacityUnits'] or
                  self.write != table.provisioned_throughput['WriteCapacityUnits']):
-
             log.info("Updating capacity on table %s (%s -> %s)",
                      self.name,
                      dict(
@@ -451,8 +456,8 @@ class DynamoTable3(DynamoCommon3):
             log.info("Updating stream on table %s (%s -> %s)",
                      self.name,
                      table.stream_specification['StreamViewType']
-                         if table.stream_specification and 'StreamEnabled' in table.stream_specification
-                         else 'NONE',
+                     if table.stream_specification and 'StreamEnabled' in table.stream_specification
+                     else 'NONE',
                      self.stream)
             do_update(StreamSpecification=self.stream_specification)
             return self.update_table()
@@ -478,7 +483,6 @@ class DynamoTable3(DynamoCommon3):
                 if (index.read and index.write) and \
                         (index.read != current_capacity['ReadCapacityUnits'] or
                          index.write != current_capacity['WriteCapacityUnits']):
-
                     log.info("Updating capacity on global secondary index %s on table %s (%s)", index.name, self.name,
                              index.provisioned_throughput)
 
