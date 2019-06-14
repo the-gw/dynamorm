@@ -43,12 +43,12 @@ projection  True      object  An instance of of :class:`dynamorm.model.ProjectAl
 
 import collections
 import logging
+import time
 import warnings
 
 import boto3
 import botocore
 import six
-import time
 from boto3.dynamodb.conditions import Attr, Key
 
 from dynamorm.exceptions import (ConditionFailed, HashKeyExists, InvalidSchemaField, MissingTableAttribute,
@@ -340,9 +340,6 @@ class DynamoTable3(DynamoCommon3):
 
         :param bool wait: If set to True, the default, this call will block until the table is created
         """
-        if not self.read or not self.write:
-            raise MissingTableAttribute("The read/write attributes are required to create a table")
-
         index_args = collections.defaultdict(list)
         for index in six.itervalues(self.indexes):
             index_args[index.ARG_KEY].append(index.index_args)
