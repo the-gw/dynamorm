@@ -163,7 +163,8 @@ class DynamoGlobalIndex3(DynamoIndex3):
     @property
     def index_args(self):
         args = super(DynamoGlobalIndex3, self).index_args
-        args['ProvisionedThroughput'] = self.provisioned_throughput
+        if self.read and self.write:
+            args['ProvisionedThroughput'] = self.provisioned_throughput
         return args
 
 
