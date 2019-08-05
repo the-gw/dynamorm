@@ -31,13 +31,16 @@ wheels-dev:
   extends: .wheels
   except:
     - production
+    - staging
   script:
     - pip wheel -w pkgs . --pre
 
+# install step is identical for `production` and `staging` at the moment so they are combined
 wheels-production:
   extends: .wheels
   only:
     - production
+    - staging
   script:
     - pip wheel -w pkgs .
 
@@ -54,6 +57,8 @@ show-environment:
 publish-package:
   only:
     - master
+    - staging
+    - production
   stage: deploy
   script:
     - doit publish
