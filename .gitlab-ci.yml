@@ -9,7 +9,6 @@ cache:
 
 before_script:
   - source env/bin/activate
-  - echo $VIRTUALENV
   - pip install pkgs/*.whl
 
 stages:
@@ -34,7 +33,7 @@ wheels-dev:
     - production
     - staging
   script:
-    - pip wheel -w pkgs . --pre
+    - pip wheel -w pkgs --extra-index-url=https://pypi.gwapi.eu/ . --pre
 
 # install step is identical for `production` and `staging` at the moment so they are combined
 wheels-production:
@@ -43,7 +42,7 @@ wheels-production:
     - production
     - staging
   script:
-    - pip wheel -w pkgs .
+    - pip wheel -w pkgs --extra-index-url=https://pypi.gwapi.eu/ .
 
 run-tests:
   stage: test
