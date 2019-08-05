@@ -47,7 +47,7 @@ wheels-production:
 run-tests:
   stage: test
   script:
-    - python setup.py test
+    - pytest
 
 show-environment:
   stage: test
