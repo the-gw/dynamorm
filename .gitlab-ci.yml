@@ -22,6 +22,7 @@ stages:
     - python -m venv env/
     - source env/bin/activate
     - pip install --extra-index-url=https://pypi.gwapi.eu/ gwio-devenv
+    - pip install marshmallow==3.0.0rc6
   artifacts:
     name: "$CI_PROJECT_NAME-$CI_COMMIT_SHORT_SHA"
     paths:
@@ -33,7 +34,7 @@ wheels-dev:
     - production
     - staging
   script:
-    - pip wheel -w pkgs --extra-index-url=https://pypi.gwapi.eu/ . --pre
+    - pip wheel -w pkgs . --pre
 
 # install step is identical for `production` and `staging` at the moment so they are combined
 wheels-production:
@@ -42,7 +43,7 @@ wheels-production:
     - production
     - staging
   script:
-    - pip wheel -w pkgs --extra-index-url=https://pypi.gwapi.eu/ .
+    - pip wheel -w pkgs .
 
 run-tests:
   stage: test
