@@ -1,0 +1,59 @@
+default:
+  image: thegw/gwio-devenv:latest
+
+cache:
+  key: "$CI_PROJECT_NAME-$CI_COMMIT_SHORT_SHA"
+  paths:
+    - env/
+
+
+before_script:
+  - source env/bin/activate
+  - pip install pkgs/*.whl
+
+stages:
+  - build
+  - test
+  - deploy
+
+.wheels:
+  stage: build
+  before_script:
+    - python -m venv env/
+    - source env/bin/activate
+    - pip install --extra-index-url=https://pypi.gwapi.eu/ gwio-devenv
+  artifacts:
+    name: "$CI_PROJECT_NAME-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - pkgs/*.whl
+
+wheels-dev:
+  extends: .wheels
+  except:
+    - production
+  script:
+    - pip wheel -w pkgs . --pre
+
+wheels-production:
+  extends: .wheels
+  only:
+    - production
+  script:
+    - pip wheel -w pkgs .
+
+run-tests:
+  stage: test
+  script:
+    - python setup.py test
+
+show-environment:
+  stage: test
+  script:
+    - pip list
+
+publish-package:
+  only:
+    - master
+  stage: deploy
+  script:
+    - doit publish
