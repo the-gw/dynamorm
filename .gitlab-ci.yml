@@ -22,8 +22,8 @@ stages:
     - python -m venv env/
     - source env/bin/activate
     - pip install --extra-index-url=https://pypi.gwapi.eu/ gwio-devenv
-    - ./build.sh
     - pip install marshmallow==3.0.0rc6
+
   artifacts:
     name: "$CI_PROJECT_NAME-$CI_COMMIT_SHORT_SHA"
     paths:
@@ -49,6 +49,11 @@ wheels-production:
 run-tests:
   stage: test
   script:
+    - apt update
+    # Has to be part of the same job as the tests because otherwise it's not installed on the same machine
+    - apt install -y default-jre
+    - mkdir ~/.aws
+    - cp tests/samples/aws_credentials_for_ci ~/.aws/credentials
     - pytest
 
 show-environment:
