@@ -9,6 +9,7 @@ cache:
 
 before_script:
   - source env/bin/activate
+  - echo $VIRTUALENV
   - pip install pkgs/*.whl
 
 stages:
