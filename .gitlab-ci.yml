@@ -1,52 +1,15 @@
-default:
-  image: thegw/gwio-devenv:latest
+include:
+  - project: 'thegateway/api'
+    file: '/.gitlab-ci-template.yml'
 
-cache:
-  key: "$CI_PROJECT_NAME-$CI_COMMIT_SHORT_SHA"
-  paths:
-    - env/
-
-
-before_script:
-  - source env/bin/activate
-  - pip install pkgs/*.whl
-
-stages:
-  - build
-  - test
-  - deploy
 
 .wheels:
-  stage: build
+  extends: .wheels
   before_script:
-    - python -m venv env/
-    - source env/bin/activate
-    - pip install --extra-index-url=https://pypi.gwapi.eu/ gwio-devenv
-    - pip install marshmallow==3.0.0rc6
+    - pip wheel -w dist marshmallow==3.0.0rc6
 
-  artifacts:
-    name: "$CI_PROJECT_NAME-$CI_COMMIT_SHORT_SHA"
-    paths:
-      - pkgs/*.whl
 
-wheels-dev:
-  extends: .wheels
-  except:
-    - production
-    - staging
-  script:
-    - pip wheel -w pkgs . --pre
-
-# install step is identical for `production` and `staging` at the moment so they are combined
-wheels-production:
-  extends: .wheels
-  only:
-    - production
-    - staging
-  script:
-    - pip wheel -w pkgs .
-
-run-tests:
+run-dynamorm-tests:
   stage: test
   script:
     - apt update
@@ -56,16 +19,3 @@ run-tests:
     - cp tests/samples/aws_credentials_for_ci ~/.aws/credentials
     - pytest
 
-show-environment:
-  stage: test
-  script:
-    - pip list
-
-publish-package:
-  only:
-    - master
-    - staging
-    - production
-  stage: deploy
-  script:
-    - doit publish
