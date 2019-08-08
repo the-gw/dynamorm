@@ -354,8 +354,11 @@ class DynamoTable3(DynamoCommon3):
         )
         if self.read and self.write:
             table_attributes['ProvisionedThroughput'] = self.provisioned_throughput
-        else:
+        elif not (self.read or self.write):
             table_attributes['BillingMode'] = 'PAY_PER_REQUEST'
+        else:
+            raise MissingTableAttribute("Must provide both `read` and `write` attributes  or neither (pay per request) to create a table")
+
         table = self.resource.create_table(
             **table_attributes,
             **index_args

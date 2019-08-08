@@ -3,7 +3,8 @@ import os
 
 import pytest
 
-from dynamorm.exceptions import ValidationError
+from marshmallow.exceptions import ValidationError
+
 from dynamorm.model import DynaModel
 from dynamorm.indexes import GlobalIndex, ProjectKeys
 from dynamorm.relationships import OneToOne, OneToMany, ManyToOne
@@ -29,7 +30,7 @@ def test_one_to_one(dynamo_local, request):
 
         class Schema:
             thing_version = String(required=True)
-            attr1 = String()
+            attr1 = String(allow_none=True)
             attr2 = Number(required=True)
             # ... lots more attrs ...
 
@@ -67,8 +68,10 @@ def test_one_to_one(dynamo_local, request):
 
     # when saving an object with a one-to-one relationship both sides will be saved
     # when we call .save we should get a validation error from the pre_save signal since we're missing attr2
-    with pytest.raises(ValidationError):
+    try:
         item.save()
+    except ValidationError as exc:
+        assert 'Field may not be null.' in exc.normalized_messages()['attr2']
 
     assert Details.get(thing_version='foo:1', consistent=True) is None
 
