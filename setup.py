@@ -21,6 +21,7 @@ setup(
     license='Apache License Version 2.0',
 
     install_requires=[
+        'marshmallow==3.0.0rc6',
         'blinker>=1.4,<2.0',
         'boto3>=1.3,<2.0',
         'six',

@@ -2,15 +2,14 @@
 import datetime
 import dateutil.tz
 import os
-
-from decimal import Decimal
-
 import pytest
+from decimal import Decimal
+from marshmallow.exceptions import ValidationError
 
 from dynamorm import Q
 
 from dynamorm.table import DynamoTable3, QueryIterator, ScanIterator
-from dynamorm.exceptions import HashKeyExists, InvalidSchemaField, ValidationError, ConditionFailed
+from dynamorm.exceptions import HashKeyExists, InvalidSchemaField, ConditionFailed
 
 
 def is_marshmallow():
@@ -49,11 +48,10 @@ def test_schema_change(TestModel, TestModel_table, dynamo_local):
     """Simulate a schema change and make sure we get the record correctly"""
     data = {'foo': '1', 'bar': '2', 'bad_key': 10, 'baz': 'baz'}
     TestModel.Table.put(data)
-    item = TestModel.get(foo='1', bar='2')
-    assert item._raw == data
-    assert item.foo == '1'
-    assert item.bar == '2'
-    assert not hasattr(item, 'bad_key')
+    try:
+        item = TestModel.get(foo='1', bar='2')
+    except ValidationError as exc:
+        assert 'Unknown field.' in exc.normalized_messages()['bad_key']
 
 
 def test_put_invalid_schema(TestModel, TestModel_table, dynamo_local):
@@ -329,14 +327,10 @@ def test_schema_field_removed_update_return_all(TestModel, TestModel_table, dyna
     """
     data = {'foo': '1', 'bar': '2', 'old_schema_key': 10, 'baz': 'baz'}
     TestModel.Table.put(data)
-    item = TestModel.get(foo='1', bar='2')
-    item.update(baz='bbs', return_all=True)
-
-    assert item.foo == '1'
-    assert item.bar == '2'
-    assert item.baz == 'bbs'
-    # Old unrecognized column should be dropped
-    assert not hasattr(item, 'old_schema_key')
+    try:
+        item = TestModel.get(foo='1', bar='2')
+    except ValidationError as exc:
+        assert 'Unknown field.' in exc.normalized_messages()['old_schema_key']
 
 
 def test_update_expressions(TestModel, TestModel_entries, dynamo_local):
@@ -345,18 +339,14 @@ def test_update_expressions(TestModel, TestModel_entries, dynamo_local):
     two.update(child={'foo': 'bar'})
     assert two.child == {'foo': 'bar'}
 
-    if is_marshmallow():
-        with pytest.raises(AttributeError):
-            assert two.things is None
-    else:
-        assert two.things is None
+    assert two.things is None
 
     two.update(things=['foo'])
     assert two.things == ['foo']
     two.update(things__append=['bar'])
     assert two.things == ['foo', 'bar']
 
-    DT = datetime.datetime(2017, 7, 28, 16, 18, 15, 48, tzinfo=dateutil.tz.tzutc())
+    DT = datetime.datetime(2017, 7, 28, 16, 18, 15, 48, tzinfo=dateutil.tz.tzutc()).replace(microsecond=0)
     two.update(created=DT)
     assert isinstance(two.created, datetime.datetime)
 
@@ -372,11 +362,8 @@ def test_update_expressions(TestModel, TestModel_entries, dynamo_local):
     six = TestModel(foo='sixth', bar='six', baz='baz')
     six.save()
 
-    if is_marshmallow():
-        with pytest.raises(AttributeError):
-            assert six.count is None
-    else:
-        assert six.count is None
+    assert six.count is None
+
     six.update(count__if_not_exists=6)
     assert six.count == 6
 
@@ -500,14 +487,16 @@ def test_delete_with_hash(TestModelTwo, TestModelTwo_table, dynamo_local):
 
 
 def test_native_types(TestModel, TestModel_table, dynamo_local):
-    DT = datetime.datetime(2017, 7, 28, 16, 18, 15, 48, tzinfo=dateutil.tz.tzutc())
+    DT = datetime.datetime(2017, 7, 28, 16, 18, 15, 48, tzinfo=dateutil.tz.tzutc()).replace(microsecond=0)
 
     TestModel.put({"foo": "first", "bar": "one", "baz": "lol", "count": 123, "when": DT, "created": DT})
     model = TestModel.get(foo='first', bar='one')
     assert model.when == DT
 
-    with pytest.raises(ValidationError):
+    try:
         TestModel.put({"foo": "first", "bar": "one", "baz": "lol", "count": 123, "when": DT, "created": {'foo': 1}})
+    except ValidationError as exc:
+        assert 'Not a valid timestamp' in exc.normalized_messages()['created']
 
 
 def test_indexes_query(TestModel, TestModel_entries, dynamo_local):

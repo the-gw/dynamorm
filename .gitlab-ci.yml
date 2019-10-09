@@ -1,0 +1,16 @@
+include:
+  - project: 'thegateway/api'
+    file: '/.gitlab-ci-template.yml'
+
+run-dynamorm-tests:
+  stage: test
+  before_script:
+    - apt-get update
+    # Has to be part of the same job as the tests because otherwise it's not installed on the same machine
+    - apt-get install -y default-jre
+    - cp -R tests/samples/.aws ~/
+    - pip install codecov pytest pytest-mock
+    - pip install dist/*.whl
+  script:
+    - pytest
+

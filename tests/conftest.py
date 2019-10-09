@@ -30,6 +30,8 @@ def TestModel():
             }
 
             def _serialize(self, value, attr, obj):
+                if value is None:
+                    return None
                 try:
                     value = time.mktime(value.timetuple())
                     return int(value * 1000000)
@@ -77,11 +79,11 @@ def TestModel():
                 foo = fields.String(required=True)
                 bar = fields.String(required=True)
                 baz = fields.String(required=True)
-                count = fields.Integer()
-                child = fields.Dict()
-                things = fields.List(fields.String())
-                when = fields.DateTime()
-                created = DynamoTimestamp()
+                count = fields.Integer(allow_none=True)
+                child = fields.Dict(allow_none=True)
+                things = fields.List(fields.String(), allow_none=True)
+                when = fields.DateTime(allow_none=True)
+                created = DynamoTimestamp(allow_none=True)
 
             def business_logic(self):
                 return 'http://art.lawver.net/funny/internet.jpg?foo={foo}&bar={bar}'.format(
@@ -199,8 +201,8 @@ def TestModelTwo():
 
             class Schema:
                 foo = fields.String(required=True)
-                bar = fields.String()
-                baz = fields.String()
+                bar = fields.String(allow_none=True)
+                baz = fields.String(allow_none=True)
     else:
         from schematics import types
 
@@ -213,8 +215,8 @@ def TestModelTwo():
 
             class Schema:
                 foo = types.StringType(required=True)
-                bar = types.StringType()
-                baz = types.StringType()
+                bar = types.StringType(allow_none=True)
+                baz = types.StringType(allow_none=True)
 
     return TestModelTwo
 
